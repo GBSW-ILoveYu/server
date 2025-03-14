@@ -13,24 +13,18 @@ import { CreateLinkDto } from './dto/link.dto';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import OpenAI from 'openai';
+import { CATEGORIES } from './constants/categories.constants';
+import { urlPattern } from './constants/patterns.constants';
+import { contentSelectors } from './constants/selectors.constants';
+import { techSelectors } from './constants/selectors.constants';
+import { keywordMap } from './constants/keywords.constants';
+import { domainKeywords } from './constants/keywords.constants';
+import { pathKeywords } from './constants/keywords.constants';
 
 @Injectable()
 export class LinkService {
   private readonly logger = new Logger(LinkService.name);
   private openai: OpenAI;
-  private readonly categories = [
-    '프론트엔드 개발',
-    '백엔드 개발',
-    '클라우드 & DevOps',
-    '데이터베이스',
-    '데이터 분석',
-    '모바일 앱 개발',
-    '인공지능',
-    '게임 개발',
-    '블록체인',
-    '보안',
-    '기타',
-  ];
 
   constructor(
     @InjectRepository(Link)
@@ -157,12 +151,11 @@ export class LinkService {
 
     await this.linkRepository.remove(link);
   }
+
   private async crawlWebpage(url: string): Promise<string> {
     try {
       let formattedUrl = url.trim();
 
-      const urlPattern =
-        /^(https?:\/\/|www\.)[a-zA-Z0-9][-a-zA-Z0-9@:%._\+~#=]{0,256}\.[a-z]{2,63}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/i;
       const urlMatch = formattedUrl.match(urlPattern);
 
       if (!urlMatch) {
@@ -252,44 +245,6 @@ export class LinkService {
       const ogType = $('meta[property="og:type"]').attr('content') || '';
 
       let mainContent = '';
-
-      const contentSelectors = [
-        'article',
-        'main',
-        '[role="main"]',
-        '#content',
-        '.content',
-        '[class*="content-main"]',
-        '[class*="main-content"]',
-        '.post',
-        '.entry',
-        '[class*="article"]',
-        '[id*="article"]',
-        '[class*="post"]',
-        '[id*="post"]',
-        '[class*="blog-post"]',
-        '[class*="content-body"]',
-        '.documentation',
-        '.markdown-body',
-        '.readme',
-        '.wiki-content',
-        '.prose',
-      ];
-
-      const techSelectors = [
-        '.documentation',
-        '.markdown-body',
-        '.readme',
-        '.wiki-content',
-        '[class*="docs"]',
-        '[id*="docs"]',
-        '[class*="api"]',
-        '[id*="api"]',
-        '[class*="tech"]',
-        '[id*="tech"]',
-        '.code-example',
-        '[class*="tutorial"]',
-      ];
 
       for (const selector of techSelectors) {
         if ($(selector).length) {
@@ -428,7 +383,7 @@ export class LinkService {
         category = category.replace(/['"]/g, '').trim();
       }
 
-      if (!this.categories.includes(category)) {
+      if (!CATEGORIES.includes(category)) {
         const closestCategory = this.findClosestCategory(category);
         if (closestCategory) {
           this.logger.debug(
@@ -462,7 +417,7 @@ export class LinkService {
 
   private findClosestCategory(text: string): string | null {
     const normalizedText = text.toLowerCase().replace(/\s+/g, '');
-    for (const category of this.categories) {
+    for (const category of CATEGORIES) {
       const normalizedCategory = category.toLowerCase().replace(/\s+/g, '');
       if (
         normalizedText.includes(normalizedCategory) ||
@@ -471,28 +426,6 @@ export class LinkService {
         return category;
       }
     }
-
-    const keywordMap = {
-      '프론트엔드 개발':
-        /프론트엔드|frontend|프론트|front-end|html|css|javascript|js|react|vue|angular|svelte|웹개발|web\s?development|ui|ux|사용자\s?인터페이스|nextjs|gatsby/i,
-      '백엔드 개발':
-        /백엔드|backend|서버|back-end|server|api|node|express|spring|django|nestjs|laravel|php|ruby|rails|python|java|서버\s?개발|fastapi|go|golang|rest|restful/i,
-      '클라우드 & DevOps':
-        /클라우드|cloud|devops|aws|azure|gcp|도커|docker|kubernetes|k8s|ci\/cd|배포|infrastructure|인프라|terraform|ansible|jenkins|github\s?actions|배포|deployment|서버리스|serverless/i,
-      데이터베이스:
-        /데이터베이스|db|database|sql|nosql|mysql|postgresql|mongodb|oracle|redis|supabase|firebase|firestore|dynamodb|mariadb|데이터\s?모델링|쿼리|query|orm|인덱싱|indexing/i,
-      '데이터 분석':
-        /데이터\s?분석|data\s?analysis|데이터|빅데이터|bigdata|통계|statistics|pandas|tableau|분석|analysis|시각화|visualization|대시보드|dashboard|데이터\s?마이닝|data\s?mining|etl|power\s?bi|looker|metabase|차트|chart/i,
-      '모바일 앱 개발':
-        /모바일|mobile|앱|app|android|안드로이드|ios|아이폰|flutter|react\s?native|swift|kotlin|objective-c|xamarin|앱\s?개발|app\s?development|모바일\s?앱|mobile\s?app/i,
-      인공지능:
-        /인공지능|ai|머신러닝|machine\s?learning|ml|딥러닝|deep\s?learning|dl|tensorflow|pytorch|인공|artificial|gpt|nlp|자연어|natural\s?language|computer\s?vision|컴퓨터\s?비전|chatgpt|openai|huggingface|llm|large\s?language\s?model/i,
-      '게임 개발':
-        /게임|game|유니티|unity|언리얼|unreal|gaming|게임엔진|game\s?engine|게임\s?개발|game\s?development|게임\s?프로그래밍|3d|렌더링|rendering|게임\s?디자인|godot/i,
-      블록체인:
-        /블록체인|blockchain|암호화폐|crypto|web3|ethereum|nft|솔리디티|solidity|비트코인|이더리움|스마트\s?컨트랙트|smart\s?contract|토큰|token|dapp|wallet|지갑|코인|coin|분산|decentralized/i,
-      보안: /보안|security|해킹|hacking|사이버|cyber|침투|penetration|취약점|vulnerability|암호화|encryption|인증|authentication|권한|authorization|firewall|방화벽|ssl|tls|owasp|보안\s?감사|audit/i,
-    };
 
     for (const [category, pattern] of Object.entries(keywordMap)) {
       if (pattern.test(text)) {
@@ -507,189 +440,6 @@ export class LinkService {
     try {
       const urlLower = url.toLowerCase();
 
-      const domainKeywords = {
-        '프론트엔드 개발': [
-          'reactjs.org',
-          'vuejs.org',
-          'angular.io',
-          'css-tricks',
-          'smashingmagazine',
-          'frontendmasters',
-          'cssinjs',
-          'styled-components',
-          'tailwindcss',
-          'javascript.info',
-          'nextjs',
-          'svelte',
-          'webpack',
-          'frontendex',
-          'ui',
-          'ux',
-          'design',
-          'webdev',
-        ],
-        '백엔드 개발': [
-          'nodejs.org',
-          'expressjs.com',
-          'spring.io',
-          'djangoproject.com',
-          'nestjs.com',
-          'rubyonrails.org',
-          'laravel.com',
-          'fastapi',
-          'flask',
-          'php.net',
-          'webserver',
-          'api',
-          'rest',
-          'graphql',
-          'microservice',
-          'serverless',
-        ],
-        '클라우드 & DevOps': [
-          'aws.amazon',
-          'azure.microsoft',
-          'cloud.google',
-          'docker.com',
-          'kubernetes.io',
-          'terraform.io',
-          'jenkins',
-          'github.com/actions',
-          'gitlab.com/ci',
-          'circleci',
-          'heroku',
-          'netlify',
-          'vercel',
-          'digitalocean',
-          'cloudflare',
-          'nginx',
-          'devop',
-        ],
-        데이터베이스: [
-          'mysql.com',
-          'postgresql.org',
-          'mongodb.com',
-          'redis.io',
-          'mariadb',
-          'supabase',
-          'firebase',
-          'dynamodb',
-          'cosmosdb',
-          'cassandra',
-          'couchdb',
-          'elasticsearch',
-          'prisma.io',
-          'sequelize',
-          'typeorm',
-          'indexing',
-          'query',
-        ],
-        '데이터 분석': [
-          'kaggle.com',
-          'tableau.com',
-          'powerbi',
-          'analytics',
-          'pandas.pydata',
-          'numpy.org',
-          'datacamp',
-          'databricks',
-          'jupyter',
-          'colab',
-          'matplotlib',
-          'seaborn',
-          'plotly',
-          'dash',
-          'metabase',
-          'superset',
-          'looker',
-          'bigquery',
-        ],
-        '모바일 앱 개발': [
-          'developer.android',
-          'developer.apple',
-          'flutter.dev',
-          'reactnative',
-          'ionicframework',
-          'xamarin',
-          'kotlinlang',
-          'swift',
-          'objective-c',
-          'androidstudio',
-          'xcode',
-          'mobiledev',
-          'appdev',
-        ],
-        인공지능: [
-          'tensorflow.org',
-          'pytorch.org',
-          'huggingface.co',
-          'openai',
-          'deepmind',
-          'kaggle',
-          'machinelearning',
-          'deeplearning',
-          'neuralnetwork',
-          'llm',
-          'nlp',
-          'transformers',
-          'gpt',
-          'langchain',
-          'opencv',
-        ],
-        '게임 개발': [
-          'unity.com',
-          'unrealengine.com',
-          'gamedev',
-          'gamasutra',
-          'godotengine',
-          'gamejolt',
-          'itch.io',
-          'playcanvas',
-          'roblox',
-          'gamemaker',
-          '3dengine',
-        ],
-        블록체인: [
-          'ethereum.org',
-          'blockchain',
-          'web3',
-          'solidity',
-          'crypto',
-          'bitcoin',
-          'metamask',
-          'opensea',
-          'nft',
-          'defi',
-          'smartcontract',
-          'coinmarketcap',
-          'binance',
-          'polkadot',
-          'cardano',
-          'tokenomics',
-          'wallet',
-        ],
-        보안: [
-          'hackerone',
-          'bugcrowd',
-          'owasp.org',
-          'security',
-          'cyber',
-          'pentesting',
-          'snyk',
-          'veracode',
-          'nessus',
-          'burpsuite',
-          'metasploit',
-          'kali',
-          'cryptography',
-          'infosec',
-          'encryption',
-          'firewall',
-          'authentication',
-          'authorization',
-        ],
-      };
-
       try {
         const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
         const domain = urlObj.hostname;
@@ -700,225 +450,6 @@ export class LinkService {
             return category;
           }
         }
-
-        const pathKeywords = {
-          '프론트엔드 개발': [
-            'frontend',
-            'html',
-            'css',
-            'javascript',
-            'react',
-            'vue',
-            'angular',
-            'webdesign',
-            'ui',
-            'ux',
-            'responsive',
-            'web-app',
-            'spa',
-            'pwa',
-            'tailwind',
-            'sass',
-            'less',
-            'dom',
-            'typescript',
-            'nextjs',
-            'svelte',
-          ],
-          '백엔드 개발': [
-            'backend',
-            'server',
-            'api',
-            'node',
-            'express',
-            'spring',
-            'django',
-            'laravel',
-            'php',
-            'ruby',
-            'rails',
-            'fastapi',
-            'dotnet',
-            'java',
-            'python',
-            'serverless',
-            'microservice',
-            'restful',
-            'graphql',
-            'nestjs',
-          ],
-          '클라우드 & DevOps': [
-            'cloud',
-            'devops',
-            'aws',
-            'azure',
-            'docker',
-            'kubernetes',
-            'cicd',
-            'jenkins',
-            'gitlab',
-            'github-actions',
-            'terraform',
-            'infrastructure',
-            'deployment',
-            'monitoring',
-            'logging',
-            'prometheus',
-            'grafana',
-            'nginx',
-            'serverless',
-            'lambda',
-            'elasticbean',
-          ],
-          데이터베이스: [
-            'database',
-            'sql',
-            'nosql',
-            'mysql',
-            'postgresql',
-            'mongodb',
-            'redis',
-            'firebase',
-            'orm',
-            'query',
-            'indexing',
-            'sharding',
-            'replication',
-            'prisma',
-            'typeorm',
-            'sequelize',
-            'normalization',
-            'transactions',
-            'acid',
-            'migration',
-            'schema',
-            'supabase',
-          ],
-          '데이터 분석': [
-            'data-analysis',
-            'analytics',
-            'statistics',
-            'pandas',
-            'tableau',
-            'visualization',
-            'dashboard',
-            'data-science',
-            'jupyter',
-            'bigdata',
-            'etl',
-            'powerbi',
-            'excel',
-            'spreadsheet',
-            'pivot',
-            'regression',
-            'forecasting',
-            'bi',
-            'business-intelligence',
-            'matplotlib',
-            'seaborn',
-          ],
-          '모바일 앱 개발': [
-            'mobile',
-            'android',
-            'ios',
-            'flutter',
-            'react-native',
-            'swift',
-            'kotlin',
-            'xamarin',
-            'ionic',
-            'objective-c',
-            'app-development',
-            'mobile-app',
-            'responsive',
-            'appstore',
-            'playstore',
-            'progressive-web-app',
-            'cordova',
-            'capacitor',
-          ],
-          인공지능: [
-            'ai',
-            'machine-learning',
-            'deep-learning',
-            'tensorflow',
-            'pytorch',
-            'neural-network',
-            'natural-language-processing',
-            'nlp',
-            'computer-vision',
-            'image-recognition',
-            'reinforcement-learning',
-            'model',
-            'training',
-            'dataset',
-            'prediction',
-            'classifier',
-            'regression',
-            'gpt',
-            'llm',
-            'ml',
-          ],
-          '게임 개발': [
-            'game',
-            'unity',
-            'unreal',
-            'gaming',
-            '3d',
-            'rendering',
-            'game-engine',
-            'shader',
-            'animation',
-            'character-design',
-            'level-design',
-            'game-mechanics',
-            'player-experience',
-            'multiplayer',
-            'gamedev',
-            'indies',
-            'puzzle-game',
-          ],
-          블록체인: [
-            'blockchain',
-            'crypto',
-            'web3',
-            'ethereum',
-            'solidity',
-            'smart-contract',
-            'token',
-            'wallet',
-            'defi',
-            'nft',
-            'bitcoin',
-            'altcoin',
-            'mining',
-            'consensus',
-            'dao',
-            'decentralized',
-            'chain',
-            'ledger',
-            'transaction',
-          ],
-          보안: [
-            'security',
-            'hacking',
-            'cybersecurity',
-            'pentest',
-            'vulnerability',
-            'exploit',
-            'encryption',
-            'authentication',
-            'authorization',
-            'firewall',
-            'mitigation',
-            'protection',
-            'risk',
-            'threat',
-            'assessment',
-            'compliance',
-            'privacy',
-          ],
-        };
 
         for (const [category, paths] of Object.entries(pathKeywords)) {
           if (paths.some((keyword) => path.includes(keyword))) {
