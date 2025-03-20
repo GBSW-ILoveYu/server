@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {
   BadRequestException,
   ConflictException,
@@ -29,7 +28,7 @@ export class AuthService {
   ) {}
 
   async signup(signupDto: SignupDto) {
-    const { email, password, nickName } = signupDto;
+    const { email, password, nickName, userId } = signupDto;
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -37,6 +36,7 @@ export class AuthService {
       email,
       password: hashedPassword,
       loginType: 'email',
+      userId: userId,
       nickName,
     });
 
@@ -139,9 +139,12 @@ export class AuthService {
       throw new NotFoundException('존재하지 않는 사용자입니다.');
     }
 
-    const { nickName, email } = editProfileDto;
+    const { nickName, userId, email } = editProfileDto;
     profile.nickName = nickName;
+    profile.userId = userId;
     profile.email = email;
+
+    const { password, hashedRefreshToken, ...rest } = profile;
 
     if (image) {
       try {
@@ -167,7 +170,7 @@ export class AuthService {
       );
     }
 
-    return { message: '프로필이 성공적으로 수정되었습니다.', profile };
+    return { message: '프로필이 성공적으로 수정되었습니다.', rest };
   }
 
   async deleteRefreshToken(user: User) {

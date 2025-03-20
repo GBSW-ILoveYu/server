@@ -36,4 +36,11 @@ export class SignupDto extends AuthDto {
   @MaxLength(20)
   @IsNotEmpty()
   nickName: string;
+
+  @ApiProperty({ description: '아이디' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20)
+  @IsNotEmpty()
+  userId: string;
 }

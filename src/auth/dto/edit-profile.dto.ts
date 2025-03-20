@@ -16,6 +16,13 @@ export class EditProfileDto {
   @IsOptional()
   nickName?: string;
 
+  @ApiProperty({ description: '아이디' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20)
+  @IsOptional()
+  userId?: string;
+
   @ApiProperty({ description: '이미지 URI' })
   @IsString()
   @IsOptional()
