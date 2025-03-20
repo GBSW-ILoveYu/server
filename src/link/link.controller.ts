@@ -78,4 +78,14 @@ export class LinkController {
   deleteLink(@Param('id') id: number, @GetUser() user: User) {
     return this.linkService.deleteLink(id, user);
   }
+
+  @ApiResponse({
+    status: 200,
+    description: '성공',
+  })
+  @ApiOperation({ summary: '사용자의 총 링크 개수 조회' })
+  @Get('/count/total')
+  getTotalLinkCount(@GetUser() user: User) {
+    return this.linkService.getTotalLinkCount(user);
+  }
 }
