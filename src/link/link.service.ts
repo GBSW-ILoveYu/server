@@ -3,6 +3,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +16,7 @@ import { CategoryAnalyzerService } from '../utils/category-analyzer.util';
 @Injectable()
 export class LinkService {
   private readonly logger = new Logger(LinkService.name);
+  private readonly MAX_URL_LENGTH = 2048;
 
   constructor(
     @InjectRepository(Link)
@@ -47,70 +49,65 @@ export class LinkService {
     const { url } = createLinkDto;
 
     try {
+      if (url.length > this.MAX_URL_LENGTH) {
+        throw new BadRequestException(
+          `URL은 ${this.MAX_URL_LENGTH}자를 초과할 수 없습니다.`,
+        );
+      }
+
       const existingLink = await this.linkRepository.findOne({
         where: { url, user: { id: user.id } },
         relations: ['user'],
       });
 
       if (existingLink) {
-        return this.formatLinkResponse(existingLink);
+        throw new BadRequestException('이미 등록된 링크입니다.');
       }
 
-      try {
-        const htmlContent = await this.webCrawlerService.crawlWebpage(url);
-        const extractedText =
-          this.webCrawlerService.extractTextFromHtml(htmlContent);
+      const htmlContent = await this.webCrawlerService.crawlWebpage(url);
+      const extractedText =
+        this.webCrawlerService.extractTextFromHtml(htmlContent);
 
-        // 메타데이터 추출
-        const { title, description, thumbnail } =
-          this.webCrawlerService.extractMetadata(htmlContent, url);
+      const { title, description, thumbnail } =
+        this.webCrawlerService.extractMetadata(htmlContent, url);
 
-        if (!extractedText || extractedText.length < 50) {
-          const link = this.linkRepository.create({
-            url,
-            category: '콘텐츠 부족',
-            title,
-            description,
-            thumbnail,
-            user,
-          });
-          const savedLink = await this.linkRepository.save(link);
-          return this.formatLinkResponse(savedLink);
-        }
-
-        const category = await this.categoryAnalyzerService.analyzeCategory(
-          extractedText,
-          url,
-        );
-
+      if (!extractedText || extractedText.length < 50) {
         const link = this.linkRepository.create({
           url,
-          category,
+          category: '콘텐츠 부족',
           title,
           description,
           thumbnail,
           user,
         });
-
-        const savedLink = await this.linkRepository.save(link);
-        return this.formatLinkResponse(savedLink);
-      } catch (processingError) {
-        this.logger.error(
-          `분석 오류: ${processingError.message}`,
-          processingError.stack,
-        );
-        const link = this.linkRepository.create({
-          url,
-          category: '분석 실패',
-          title: url,
-          description: '분석에 실패했습니다.',
-          thumbnail: null,
-          user,
-        });
         const savedLink = await this.linkRepository.save(link);
         return this.formatLinkResponse(savedLink);
       }
+
+      const category = await this.categoryAnalyzerService.analyzeCategory(
+        extractedText,
+        url,
+      );
+
+      const link = this.linkRepository.create({
+        url,
+        category,
+        title,
+        description,
+        thumbnail,
+        user,
+      });
+
+      const savedLink = await this.linkRepository.save(link);
+      return this.formatLinkResponse(savedLink);
     } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error.message === '이미 등록된 링크입니다.'
+      ) {
+        throw error;
+      }
+
       this.logger.error(`링크 저장 오류: ${error.message}`, error.stack);
       throw new InternalServerErrorException(
         '링크를 저장하는 중 오류가 발생했습니다.',

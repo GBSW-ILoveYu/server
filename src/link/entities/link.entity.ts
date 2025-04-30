@@ -12,7 +12,7 @@ export class Link extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ length: 2048 })
   url: string;
 
   @Column()

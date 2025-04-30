@@ -182,19 +182,21 @@ export class WebCrawlerService {
     try {
       const $ = cheerio.load(html);
 
-      const title =
+      let title =
         $('meta[property="og:title"]').attr('content') ||
         $('title').text().trim() ||
         $('h1').first().text().trim() ||
         '제목 없음';
 
+      title = this.trimToCompleteSentence(title, 50);
+
       let description =
         $('meta[property="og:description"]').attr('content') ||
         $('meta[name="description"]').attr('content') ||
-        $('p').first().text().trim().substring(0, 200) ||
+        $('p').first().text().trim() ||
         '';
 
-      description = description.substring(0, 30);
+      description = this.trimToCompleteSentence(description, 100);
 
       let thumbnail =
         $('meta[property="og:image"]').attr('content') ||
@@ -230,5 +232,24 @@ export class WebCrawlerService {
       this.logger.error(`메타데이터 추출 오류: ${error.message}`, error.stack);
       return { title: '제목 추출 실패', description: '', thumbnail: null };
     }
+  }
+
+  private trimToCompleteSentence(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    const truncated = text.slice(0, maxLength);
+    const lastSentenceEnd = Math.max(
+      truncated.lastIndexOf('.'),
+      truncated.lastIndexOf('!'),
+      truncated.lastIndexOf('?'),
+    );
+
+    if (lastSentenceEnd === -1) {
+      return truncated + '...';
+    }
+
+    return truncated.slice(0, lastSentenceEnd + 1);
   }
 }
