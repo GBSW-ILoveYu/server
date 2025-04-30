@@ -12,6 +12,8 @@ import { User } from '../auth/entities/user.entity';
 import { CreateLinkDto } from './dto/link.dto';
 import { WebCrawlerService } from '../utils/crawler.util';
 import { CategoryAnalyzerService } from '../utils/category-analyzer.util';
+import axios from 'axios';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class LinkService {
@@ -43,6 +45,19 @@ export class LinkService {
           }
         : null,
     };
+  }
+
+  async validateLink(url: string): Promise<boolean> {
+    try {
+      const response = await axios.head(url, {
+        timeout: 5000,
+        validateStatus: (status) => status < 400,
+      });
+      return response.status < 400;
+    } catch (error) {
+      this.logger.warn(`링크 유효성 검사 실패: ${url} - ${error.message}`);
+      return false;
+    }
   }
 
   async createLink(createLinkDto: CreateLinkDto, user: User): Promise<any> {
@@ -142,6 +157,11 @@ export class LinkService {
       throw new NotFoundException('링크를 찾을 수 없습니다.');
     }
 
+    const isValid = await this.validateLink(link.url);
+    if (!isValid) {
+      throw new BadRequestException('링크가 만료되었습니다.');
+    }
+
     return this.formatLinkResponse(link);
   }
 
@@ -173,5 +193,25 @@ export class LinkService {
         '총 링크 개수를 조회하는 중 오류가 발생했습니다.',
       );
     }
+  }
+
+  async checkExpiredLinks(): Promise<void> {
+    const links = await this.linkRepository.find();
+
+    for (const link of links) {
+      const isValid = await this.validateLink(link.url);
+      if (!isValid) {
+        this.logger.warn(`만료된 링크 발견: ${link.url}`);
+        link.category = '만료된 링크';
+        await this.linkRepository.save(link);
+      }
+    }
+  }
+
+  @Cron('0 0 * * *') // 매일 자정에 실행
+  async handleExpiredLinks() {
+    this.logger.log('만료된 링크 확인 작업 시작');
+    await this.checkExpiredLinks();
+    this.logger.log('만료된 링크 확인 작업 완료');
   }
 }

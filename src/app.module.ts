@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { ImageModule } from './image/image.module';
 import { LinkModule } from './link/link.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LinkModule } from './link/link.module';
     AuthModule,
     ImageModule,
     LinkModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [ConfigService],
