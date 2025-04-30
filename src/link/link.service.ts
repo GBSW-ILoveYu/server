@@ -28,6 +28,9 @@ export class LinkService {
       id: link.id,
       url: link.url,
       category: link.category,
+      title: link.title || '제목 없음',
+      description: link.description || '',
+      thumbnail: link.thumbnail || null,
       createdAt: link.createdAt,
       updatedAt: link.updatedAt,
       user: link.user
@@ -58,10 +61,17 @@ export class LinkService {
         const extractedText =
           this.webCrawlerService.extractTextFromHtml(htmlContent);
 
+        // 메타데이터 추출
+        const { title, description, thumbnail } =
+          this.webCrawlerService.extractMetadata(htmlContent, url);
+
         if (!extractedText || extractedText.length < 50) {
           const link = this.linkRepository.create({
             url,
             category: '콘텐츠 부족',
+            title,
+            description,
+            thumbnail,
             user,
           });
           const savedLink = await this.linkRepository.save(link);
@@ -76,6 +86,9 @@ export class LinkService {
         const link = this.linkRepository.create({
           url,
           category,
+          title,
+          description,
+          thumbnail,
           user,
         });
 
@@ -89,6 +102,9 @@ export class LinkService {
         const link = this.linkRepository.create({
           url,
           category: '분석 실패',
+          title: url,
+          description: '분석에 실패했습니다.',
+          thumbnail: null,
           user,
         });
         const savedLink = await this.linkRepository.save(link);

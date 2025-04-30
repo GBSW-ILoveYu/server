@@ -19,12 +19,25 @@ export class LinkResponseDto {
   @ApiProperty({ description: '카테고리' })
   category: string;
 
+  @ApiProperty({ description: '제목' })
+  title: string;
+
+  @ApiProperty({ description: '설명' })
+  description: string;
+
+  @ApiProperty({ description: '썸네일 이미지 URL' })
+  thumbnail: string;
+
   @ApiProperty({ description: '생성 시간' })
   createdAt: Date;
 
   @ApiProperty({ description: '업데이트 시간' })
   updatedAt: Date;
 
-  @ApiProperty({ description: '사용자 ID' })
-  userId: number;
+  @ApiProperty({ description: '사용자 정보' })
+  user: {
+    id: number;
+    nickName: string;
+    imageUri: string;
+  };
 }

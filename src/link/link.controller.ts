@@ -83,6 +83,10 @@ export class LinkController {
     status: 200,
     description: '성공',
   })
+  @ApiResponse({
+    status: 404,
+    description: '링크를 찾을 수 없음',
+  })
   @ApiOperation({ summary: '사용자의 총 링크 개수 조회' })
   @Get('/count/total')
   getTotalLinkCount(@GetUser() user: User) {

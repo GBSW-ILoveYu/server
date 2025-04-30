@@ -18,6 +18,15 @@ export class Link extends BaseEntity {
   @Column()
   category: string;
 
+  @Column({ nullable: true })
+  title: string;
+
+  @Column({ nullable: true, type: 'text' })
+  description: string;
+
+  @Column({ nullable: true })
+  thumbnail: string;
+
   @ManyToOne(() => User, (user) => user.links)
   user: User;
 

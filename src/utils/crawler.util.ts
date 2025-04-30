@@ -87,7 +87,6 @@ export class WebCrawlerService {
     try {
       const $ = cheerio.load(html);
 
-      // 불필요한 요소 제거
       $(
         'script, style, svg, iframe, nav, footer, header, aside, noscript, ' +
           '[class*="ads"], [class*="banner"], [id*="ads"], [id*="banner"], ' +
@@ -118,10 +117,10 @@ export class WebCrawlerService {
         `${mainContent}`;
 
       const cleanedText = combinedText
-        .replace(/\s+/g, ' ') // 여러 공백을 하나로
-        .replace(/\n\s*\n+/g, '\n\n') // 여러 줄바꿈을 두 개로
-        .replace(/\t/g, ' ') // 탭을 공백으로
-        .trim(); // 앞뒤 공백 제거
+        .replace(/\s+/g, ' ')
+        .replace(/\n\s*\n+/g, '\n\n')
+        .replace(/\t/g, ' ')
+        .trim();
 
       return cleanedText.slice(0, 4000);
     } catch (error) {
@@ -174,5 +173,62 @@ export class WebCrawlerService {
     }
 
     return $('body').text();
+  }
+
+  extractMetadata(
+    html: string,
+    url: string,
+  ): { title: string; description: string; thumbnail: string } {
+    try {
+      const $ = cheerio.load(html);
+
+      const title =
+        $('meta[property="og:title"]').attr('content') ||
+        $('title').text().trim() ||
+        $('h1').first().text().trim() ||
+        '제목 없음';
+
+      let description =
+        $('meta[property="og:description"]').attr('content') ||
+        $('meta[name="description"]').attr('content') ||
+        $('p').first().text().trim().substring(0, 200) ||
+        '';
+
+      description = description.substring(0, 30);
+
+      let thumbnail =
+        $('meta[property="og:image"]').attr('content') ||
+        $('meta[name="twitter:image"]').attr('content');
+
+      if (!thumbnail) {
+        $('img').each((_, el) => {
+          const img = $(el);
+          const src = img.attr('src');
+          const width = parseInt(img.attr('width') || '0', 10);
+          const height = parseInt(img.attr('height') || '0', 10);
+
+          if (src && (width > 100 || height > 100)) {
+            if (src.startsWith('/')) {
+              const urlObj = new URL(url);
+              thumbnail = `${urlObj.protocol}//${urlObj.host}${src}`;
+            } else if (!src.startsWith('http')) {
+              const urlObj = new URL(url);
+              thumbnail = `${urlObj.protocol}//${urlObj.host}/${src}`;
+            } else {
+              thumbnail = src;
+            }
+            return false;
+          }
+        });
+      }
+
+      const defaultThumbnail =
+        'https://afrojaxx.co.za/wp/wp-content/themes/supermart-ecommerce-pro/images/default.png';
+
+      return { title, description, thumbnail: thumbnail || defaultThumbnail };
+    } catch (error) {
+      this.logger.error(`메타데이터 추출 오류: ${error.message}`, error.stack);
+      return { title: '제목 추출 실패', description: '', thumbnail: null };
+    }
   }
 }
