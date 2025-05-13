@@ -123,7 +123,6 @@ export class LinkService {
         throw error;
       }
 
-      this.logger.error(`링크 저장 오류: ${error.message}`, error.stack);
       throw new InternalServerErrorException(
         '링크를 저장하는 중 오류가 발생했습니다.',
       );
@@ -140,7 +139,6 @@ export class LinkService {
 
       return links.map((link) => this.formatLinkResponse(link));
     } catch (error) {
-      this.logger.error(`링크 조회 오류: ${error.message}`, error.stack);
       throw new InternalServerErrorException(
         '링크를 조회하는 중 오류가 발생했습니다.',
       );
@@ -185,10 +183,6 @@ export class LinkService {
 
       return count;
     } catch (error) {
-      this.logger.error(
-        `총 링크 개수 조회 오류: ${error.message}`,
-        error.stack,
-      );
       throw new InternalServerErrorException(
         '총 링크 개수를 조회하는 중 오류가 발생했습니다.',
       );
@@ -213,5 +207,23 @@ export class LinkService {
     this.logger.log('만료된 링크 확인 작업 시작');
     await this.checkExpiredLinks();
     this.logger.log('만료된 링크 확인 작업 완료');
+  }
+
+  async getLinksByCategory(category: string, user: User): Promise<any[]> {
+    try {
+      const normalizedCategory = category.trim();
+
+      const links = await this.linkRepository.find({
+        where: { category: normalizedCategory, user: { id: user.id } },
+        order: { createdAt: 'DESC' },
+        relations: ['user'],
+      });
+
+      return links.map((link) => this.formatLinkResponse(link));
+    } catch (error) {
+      throw new InternalServerErrorException(
+        '카테고리별 링크를 조회하는 중 오류가 발생했습니다.',
+      );
+    }
   }
 }

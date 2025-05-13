@@ -5,20 +5,24 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
   ValidationPipe,
+  Logger,
 } from '@nestjs/common';
 import { LinkService } from './link.service';
 import { CreateLinkDto, LinkResponseDto } from './dto/link.dto';
 import { User } from '../auth/entities/user.entity';
 import { GetUser } from '../@common/decorators/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Links')
 @Controller('links')
 @UseGuards(AuthGuard('jwt'))
 export class LinkController {
+  private readonly logger = new Logger(LinkController.name);
+
   constructor(private linkService: LinkService) {}
 
   @ApiResponse({
@@ -44,10 +48,31 @@ export class LinkController {
     description: '성공',
     type: [LinkResponseDto],
   })
-  @ApiOperation({ summary: '모든 링크 조회' })
+  @ApiOperation({ summary: '모든 링크 조회 또는 카테고리별 링크 조회' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: '필터링할 카테고리',
+  })
   @Get()
-  getAllLinks(@GetUser() user: User) {
+  getLinks(@Query('category') category: string, @GetUser() user: User) {
+    this.logger.log(`카테고리 조회 요청: ${category || '전체'}`);
+
+    if (category) {
+      return this.linkService.getLinksByCategory(category, user);
+    }
+
     return this.linkService.getAllUserLinks(user);
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: '성공',
+  })
+  @ApiOperation({ summary: '사용자의 총 링크 개수 조회' })
+  @Get('/count/total')
+  getTotalLinkCount(@GetUser() user: User) {
+    return this.linkService.getTotalLinkCount(user);
   }
 
   @ApiResponse({
@@ -77,19 +102,5 @@ export class LinkController {
   @Delete('/:id')
   deleteLink(@Param('id') id: number, @GetUser() user: User) {
     return this.linkService.deleteLink(id, user);
-  }
-
-  @ApiResponse({
-    status: 200,
-    description: '성공',
-  })
-  @ApiResponse({
-    status: 404,
-    description: '링크를 찾을 수 없음',
-  })
-  @ApiOperation({ summary: '사용자의 총 링크 개수 조회' })
-  @Get('/count/total')
-  getTotalLinkCount(@GetUser() user: User) {
-    return this.linkService.getTotalLinkCount(user);
   }
 }
