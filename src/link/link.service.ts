@@ -175,13 +175,13 @@ export class LinkService {
     await this.linkRepository.remove(link);
   }
 
-  async getTotalLinkCount(user: User): Promise<number> {
+  async getTotalLinkCount(user: User): Promise<{ totalCount: number }> {
     try {
       const count = await this.linkRepository.count({
         where: { user: { id: user.id } },
       });
 
-      return count;
+      return { totalCount: count };
     } catch (error) {
       throw new InternalServerErrorException(
         '총 링크 개수를 조회하는 중 오류가 발생했습니다.',
