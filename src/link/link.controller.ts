@@ -48,21 +48,34 @@ export class LinkController {
     description: '성공',
     type: [LinkResponseDto],
   })
-  @ApiOperation({ summary: '모든 링크 조회 또는 카테고리별 링크 조회' })
+  @ApiOperation({ summary: '최근에 추가한 링크 N개 조회' })
   @ApiQuery({
-    name: 'category',
+    name: 'limit',
     required: false,
-    description: '필터링할 카테고리',
+    description: '가져올 링크 개수(기본값 5)',
   })
-  @Get()
-  getLinks(@Query('category') category: string, @GetUser() user: User) {
-    this.logger.log(`카테고리 조회 요청: ${category || '전체'}`);
+  @Get('/recent')
+  getRecentLinks(@Query('limit') limit: number, @GetUser() user: User) {
+    const take = limit && !isNaN(Number(limit)) ? Number(limit) : 5;
+    return this.linkService.getRecentLinks(user, take);
+  }
 
-    if (category) {
-      return this.linkService.getLinksByCategory(category, user);
-    }
-
-    return this.linkService.getAllUserLinks(user);
+  // 🔥 이 라우트를 /:id 보다 위로 이동
+  @ApiOperation({ summary: '최근 열어본 링크 N개 조회' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '가져올 링크 개수(기본값 5)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '성공',
+    type: [LinkResponseDto],
+  })
+  @Get('/recently-opened')
+  getRecentlyOpenedLinks(@Query('limit') limit: number, @GetUser() user: User) {
+    const take = limit && !isNaN(Number(limit)) ? Number(limit) : 5;
+    return this.linkService.getRecentlyOpenedLinks(user, take);
   }
 
   @ApiResponse({
@@ -78,15 +91,35 @@ export class LinkController {
   @ApiResponse({
     status: 200,
     description: '성공',
+    type: [LinkResponseDto],
+  })
+  @ApiOperation({ summary: '모든 링크 조회 또는 카테고리별 링크 조회' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: '필터링할 카테고리',
+  })
+  @Get()
+  getLinks(@Query('category') category: string, @GetUser() user: User) {
+    this.logger.log(`카테고리 조회 요청: ${category || '전체'}`);
+    if (category) {
+      return this.linkService.getLinksByCategory(category, user);
+    }
+    return this.linkService.getAllUserLinks(user);
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: '성공',
     type: LinkResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: '링크를 찾을 수 없음',
   })
-  @ApiOperation({ summary: '링크 상세 조회' })
+  @ApiOperation({ summary: '링크 상세 조회 및 열람 기록 저장' })
   @Get('/:id')
-  getLinkById(@Param('id') id: number, @GetUser() user: User) {
+  async getLinkById(@Param('id') id: number, @GetUser() user: User) {
     return this.linkService.getLinkById(id, user);
   }
 
