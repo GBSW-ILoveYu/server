@@ -314,6 +314,31 @@ export class LinkService {
     }
   }
 
+  async getOpenedLinkCount(user: User): Promise<{ totalCount: number; openedCount: number }> {
+    try {
+      // 전체 링크 개수
+      const totalCount = await this.linkRepository.count({
+        where: { user: { id: user.id } },
+      });
+
+      // 열어본 링크 개수 (중복 제거)
+      const openedCount = await this.linkOpenHistoryRepository
+        .createQueryBuilder('history')
+        .leftJoin('history.link', 'link')
+        .where('history.user.id = :userId', { userId: user.id })
+        .andWhere('link.user.id = :userId', { userId: user.id }) // 자신이 저장한 링크만
+        .select('DISTINCT link.id')
+        .getCount();
+
+      return { totalCount, openedCount };
+    } catch (error) {
+      this.logger.error(
+        `열어본 링크 개수 조회 실패, 사용자 ID: ${user.id}, 오류: ${error.message}`,
+      );
+      throw new InternalServerErrorException('열어본 링크 개수 조회에 실패했습니다.');
+    }
+  }
+
   // async checkExpiredLinks(): Promise<void> {
   //   const links = await this.linkRepository.find({
   //     select: ['id', 'url', 'category'],

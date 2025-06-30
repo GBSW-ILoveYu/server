@@ -42,3 +42,11 @@ export class LinkResponseDto {
     imageUri: string;
   };
 }
+
+export class OpenedLinkCountDto {
+  @ApiProperty({ description: '전체 저장한 링크 개수' })
+  totalCount: number;
+
+  @ApiProperty({ description: '열어본 링크 개수' })
+  openedCount: number;
+}

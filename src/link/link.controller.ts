@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { LinkService } from './link.service';
-import { CreateLinkDto, LinkResponseDto } from './dto/link.dto';
+import { CreateLinkDto, LinkResponseDto, OpenedLinkCountDto } from './dto/link.dto';
 import { User } from '../auth/entities/user.entity';
 import { GetUser } from '../@common/decorators/get-user.decorator';
 import { AuthGuard } from '@nestjs/passport';
@@ -85,6 +85,17 @@ export class LinkController {
   @Get('/count/total')
   getTotalLinkCount(@GetUser() user: User) {
     return this.linkService.getTotalLinkCount(user);
+  }
+
+  @ApiResponse({
+    status: 200,
+    description: '성공',
+    type: OpenedLinkCountDto,
+  })
+  @ApiOperation({ summary: '저장한 링크 중 열어본 링크 개수 조회' })
+  @Get('/count/opened')
+  getOpenedLinkCount(@GetUser() user: User) {
+    return this.linkService.getOpenedLinkCount(user);
   }
 
   @ApiResponse({
