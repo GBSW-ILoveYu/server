@@ -297,6 +297,12 @@ export class LinkService {
       throw new NotFoundException(ERROR_MESSAGES.LINK_NOT_FOUND);
     }
 
+    // 링크와 연관된 열람 기록 먼저 삭제
+    await this.linkOpenHistoryRepository.delete({
+      link: { id: link.id },
+    });
+
+    // 그 다음 링크 삭제
     await this.linkRepository.remove(link);
   }
 
