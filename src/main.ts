@@ -13,7 +13,8 @@ async function bootstrap() {
     // CORS 설정
     app.enableCors({
       origin: [
-        '',
+        'https://linky.wlstmd.com',
+        'https://web-nine-theta-85.vercel.app',
         'http://localhost:3000', // 로컬 개발 환경을 위해 추가
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
