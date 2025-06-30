@@ -20,4 +20,4 @@ jobs:
       - name: taging
         run: docker tag capstone:latest ghcr.io/wlstmd/capstone:latest
       - name: Push to GitHub Container Registry
-        run: docker push wlstmd/registar:latest
+        run: docker push wlstmd/capstone:latest
