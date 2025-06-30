@@ -17,17 +17,17 @@ jobs:
       - name: Stop and remove existing containers
         run: |
           cd /home/ec2-user
-          sudo docker-compose down || true
+          sudo docker compose down || true
 
       - name: Remove old images (optional cleanup)
         run: sudo docker image prune -f || true
 
-      - name: Start services with docker-compose
+      - name: Start services with docker compose
         run: |
           cd /home/ec2-user
-          sudo docker-compose up -d
+          sudo docker compose up -d
 
       - name: Verify deployment
         run: |
           cd /home/ec2-user
-          sudo docker-compose ps
+          sudo docker compose ps
