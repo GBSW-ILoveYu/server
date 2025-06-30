@@ -280,7 +280,6 @@ export class LinkService {
       throw new NotFoundException(ERROR_MESSAGES.LINK_NOT_FOUND);
     }
 
-    // 열람 기록 저장 (비동기로 실행하여 응답 지연 방지)
     this.recordLinkOpen(link, user).catch((error) => {
       this.logger.error(`열람 기록 저장 중 오류: ${error.message}`);
     });

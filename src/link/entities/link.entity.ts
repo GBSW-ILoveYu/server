@@ -3,9 +3,11 @@ import {
   Column,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { LinkOpenHistory } from './link-open-history.entity';
 
 @Entity()
 export class Link extends BaseEntity {
@@ -24,11 +26,14 @@ export class Link extends BaseEntity {
   @Column({ nullable: true, type: 'text' })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, length: 2048 })
   thumbnail: string;
 
   @ManyToOne(() => User, (user) => user.links)
   user: User;
+
+  @OneToMany(() => LinkOpenHistory, (history) => history.link, { cascade: true })
+  openHistories: LinkOpenHistory[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
