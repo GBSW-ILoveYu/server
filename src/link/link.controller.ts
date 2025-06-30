@@ -60,7 +60,6 @@ export class LinkController {
     return this.linkService.getRecentLinks(user, take);
   }
 
-  // 🔥 이 라우트를 /:id 보다 위로 이동
   @ApiOperation({ summary: '최근 열어본 링크 N개 조회' })
   @ApiQuery({
     name: 'limit',
