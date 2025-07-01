@@ -56,7 +56,8 @@ export class LinkService {
       const parsedUrl = new URL(
         url.startsWith('http') ? url : `https://${url}`,
       );
-      let normalized = parsedUrl.hostname.replace(/^www\./i, '');
+
+      let normalized = parsedUrl.hostname.replace(/^www\./i, '').toLowerCase();
 
       normalized += parsedUrl.pathname;
 
@@ -65,9 +66,11 @@ export class LinkService {
         parsedUrl.searchParams.get('v')
       ) {
         normalized += `?v=${parsedUrl.searchParams.get('v')}`;
+      } else if (parsedUrl.search) {
+        normalized += parsedUrl.search;
       }
 
-      return normalized.toLowerCase();
+      return normalized;
     } catch (error) {
       this.logger.warn(`URL 정규화 실패: ${url} - ${error.message}`);
       return url;
@@ -320,7 +323,9 @@ export class LinkService {
     }
   }
 
-  async getOpenedLinkCount(user: User): Promise<{ totalCount: number; openedCount: number }> {
+  async getOpenedLinkCount(
+    user: User,
+  ): Promise<{ totalCount: number; openedCount: number }> {
     try {
       // 전체 링크 개수
       const totalCount = await this.linkRepository.count({
@@ -341,7 +346,9 @@ export class LinkService {
       this.logger.error(
         `열어본 링크 개수 조회 실패, 사용자 ID: ${user.id}, 오류: ${error.message}`,
       );
-      throw new InternalServerErrorException('열어본 링크 개수 조회에 실패했습니다.');
+      throw new InternalServerErrorException(
+        '열어본 링크 개수 조회에 실패했습니다.',
+      );
     }
   }
 
