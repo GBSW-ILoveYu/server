@@ -59,8 +59,8 @@ export class WebCrawlerService {
           'Sec-Fetch-Site': 'none',
           'Cache-Control': 'max-age=0',
         },
-        timeout: 10000,
-        maxRedirects: 5,
+        timeout: 15000,
+        maxRedirects: 10,
         validateStatus: (status) => status < 400,
       });
 
