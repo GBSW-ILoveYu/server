@@ -57,7 +57,7 @@ export class LinkService {
         url.startsWith('http') ? url : `https://${url}`,
       );
 
-      let normalized = parsedUrl.hostname.replace(/^www\./i, '').toLowerCase();
+      let normalized = parsedUrl.hostname.replace(/^www\./i, '');
 
       normalized += parsedUrl.pathname;
 
